@@ -18,8 +18,12 @@
         "name": "next"
       }
     ],
+    "baseUrl": "src",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["*"],
+      "@lib/*": ["lib/*"],
+      "@components/*": ["components/*"],
+      "@services/*": ["services/*"]
     }
   },
   "include": [
