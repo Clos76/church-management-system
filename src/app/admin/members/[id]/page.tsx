@@ -53,11 +53,31 @@ export default function MemberDetailPage() {
       | "other",
   });
 
-  const [churchForm, setChurchForm] = useState({
-    member_status: "visitor" as "visitor" | "attendee" | "member" | "inactive",
+  type MemberStatus = "visitor" | "attendee" | "member" | "inactive";
+
+  const [churchForm, setChurchForm] = useState<{
+    member_status: MemberStatus;
+    baptism_date: string;
+    membership_date: string;
+  }>({
+    member_status: "visitor",
     baptism_date: "",
     membership_date: "",
   });
+
+  const normalizeMemberStatus = (
+    status: string | null | undefined,
+  ): MemberStatus => {
+    if (
+      status === "visitor" ||
+      status === "attendee" ||
+      status === "member" ||
+      status === "inactive"
+    ) {
+      return status;
+    }
+    return "visitor";
+  };
 
   const [emergencyForm, setEmergencyForm] = useState({
     emergency_contact_name: "",
@@ -111,9 +131,9 @@ export default function MemberDetailPage() {
     });
 
     setChurchForm({
-      member_status: data.member_status,
-      baptism_date: data.baptism_date || "",
-      membership_date: data.membership_date || "",
+      member_status: normalizeMemberStatus(data.member_status),
+      baptism_date: data.baptism_date ?? "",
+      membership_date: data.membership_date ?? "",
     });
 
     setEmergencyForm({
