@@ -1,4 +1,4 @@
-///admin/registrations/page.tsx
+///admin/registrations/page.tsx page
 "use client";
 
 import { useEffect, useState } from "react";
