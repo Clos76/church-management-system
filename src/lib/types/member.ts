@@ -1,38 +1,5 @@
 // // lib/types/member.ts
 
-// import { Database } from "./database.types";
-
-// // Extract the Member type from database types
-// export type Member = Database["public"]["Tables"]["members"]["Row"];
-
-// // Create input types based on database Insert types
-// export type CreateMemberInput = Omit<
-//   Database["public"]["Tables"]["members"]["Insert"],
-//   "id" | "created_at" | "updated_at"
-// >;
-
-// export type UpdateMemberInput = Partial<CreateMemberInput> & {
-//   id: string;
-// };
-
-// // Helper type for member with related data
-// export interface MemberWithRelations extends Member {
-//   families?: {
-//     id: string;
-//     family_name: string;
-//   } | null;
-//   member_tags?: Array<{
-//     tags: {
-//       id: string;
-//       name: string;
-//       category: string | null;
-//       color: string | null;
-//     };
-//   }>;
-// }
-
-// lib/types/member.ts
-
 import { Database } from "./database.types";
 
 // Base member type from database

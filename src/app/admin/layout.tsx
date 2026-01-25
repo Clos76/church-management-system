@@ -199,7 +199,7 @@ export default function AdminLayout({
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Church CRM</h1>
+              <h1 className="text-lg font-bold text-gray-900">CC Rosarito</h1>
               <p className="text-xs text-gray-500">Admin Portal</p>
             </div>
           </div>

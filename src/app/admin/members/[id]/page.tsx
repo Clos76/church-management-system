@@ -742,7 +742,7 @@ function Input({ label, required, ...props }: InputProps) {
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full px-4 py-2 border text-gray-700  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         {...props}
       />
     </div>
@@ -761,7 +761,7 @@ function Select({ label, options, ...props }: SelectProps) {
         {label}
       </label>
       <select
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full px-4 py-2 border text-gray-700  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         {...props}
       >
         {options.map((opt) => (
@@ -785,7 +785,7 @@ function Textarea({ label, ...props }: TextareaProps) {
         {label}
       </label>
       <textarea
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full px-4 py-2 text-gray-700  border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         {...props}
       />
     </div>

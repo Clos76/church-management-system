@@ -11,6 +11,7 @@ import { EventWithStats } from "@/lib/types/event";
 import { RegistrationWithBalance } from "@/lib/types/registration";
 import { Calendar } from "@/lib/types/calendar";
 import Link from "next/link";
+import { paymentService } from "@/lib/services/payment-service";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -25,6 +26,26 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSignupUrl, setShowSignupUrl] = useState(false);
+  const [showAddRegistration, setShowAddRegistration] = useState(false);
+  const [showRecordPayment, setShowRecordPayment] = useState(false);
+  const [selectedRegistration, setSelectedRegistration] =
+    useState<RegistrationWithBalance | null>(null);
+
+  const [regForm, setRegForm] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    mobile_phone: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    notes: "",
+  });
+
+  const [paymentForm, setPaymentForm] = useState({
+    amount: "",
+    method: "cash" as "cash" | "check" | "zelle" | "venmo" | "paypal",
+    notes: "",
+  });
 
   useEffect(() => {
     loadEventData();
@@ -32,16 +53,13 @@ export default function EventDetailPage() {
 
   const loadEventData = async () => {
     setLoading(true);
-
     const [eventResult, registrationsResult] = await Promise.all([
-      eventService.getEventById(eventId), //removed: { includeStats: true }
+      eventService.getEventById(eventId),
       registrationService.getRegistrations({ eventId }),
     ]);
 
     if (eventResult.success && eventResult.data) {
       setEvent(eventResult.data);
-
-      // Load calendar if exists
       if (eventResult.data.calendar_id) {
         const calResult = await calendarService.getCalendarById(
           eventResult.data.calendar_id,
@@ -75,6 +93,59 @@ export default function EventDetailPage() {
       navigator.clipboard.writeText(fullUrl);
       setShowSignupUrl(false);
       alert("Signup URL copied to clipboard!");
+    }
+  };
+
+  const handleAddRegistration = async () => {
+    if (!event || !regForm.first_name || !regForm.last_name || !regForm.email) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    const result = await registrationService.createPublicRegistration({
+      event_id: event.id,
+      ...regForm,
+    });
+
+    if (result.success) {
+      setShowAddRegistration(false);
+      setRegForm({
+        first_name: "",
+        last_name: "",
+        email: "",
+        mobile_phone: "",
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
+        notes: "",
+      });
+      await loadEventData();
+      alert("Registration added successfully!");
+    } else {
+      alert(result.error || "Failed to add registration");
+    }
+  };
+
+  const handleRecordPayment = async () => {
+    if (!selectedRegistration || !paymentForm.amount) {
+      alert("Please enter a payment amount");
+      return;
+    }
+
+    const result = await paymentService.recordManualPayment({
+      registration_id: selectedRegistration.id,
+      amount: parseFloat(paymentForm.amount),
+      method: paymentForm.method,
+      notes: paymentForm.notes,
+    });
+
+    if (result.success) {
+      setShowRecordPayment(false);
+      setSelectedRegistration(null);
+      setPaymentForm({ amount: "", method: "cash", notes: "" });
+      await loadEventData(); // Refresh to show updated payment status
+      alert("Payment recorded successfully!");
+    } else {
+      alert(result.error || "Failed to record payment");
     }
   };
 
@@ -124,7 +195,7 @@ export default function EventDetailPage() {
   }
 
   const capacityRemaining = event.capacity
-    ? event.capacity - (event.registration_count || 0)
+    ? event.capacity - registrations.length
     : null;
 
   return (
@@ -175,7 +246,7 @@ export default function EventDetailPage() {
                 d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
               />
             </svg>
-            Share Signup Link
+            Share Link
           </button>
           <Link
             href={`/admin/events/${eventId}/edit`}
@@ -194,7 +265,7 @@ export default function EventDetailPage() {
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
               />
             </svg>
-            Edit Event
+            Edit
           </Link>
           <button
             onClick={() => setShowDeleteConfirm(true)}
@@ -231,7 +302,7 @@ export default function EventDetailPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <p className="text-sm text-gray-600">Registrations</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            {event.registration_count || 0}
+            {registrations.length}
             {event.capacity && (
               <span className="text-sm font-normal text-gray-500">
                 {" "}
@@ -315,8 +386,27 @@ export default function EventDetailPage() {
 
       {/* Registrations */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Registrations</h2>
+          <button
+            onClick={() => setShowAddRegistration(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            Add Registration
+          </button>
         </div>
         {registrations.length === 0 ? (
           <div className="text-center py-12">
@@ -335,7 +425,7 @@ export default function EventDetailPage() {
             </svg>
             <p className="text-gray-600 font-medium">No registrations yet</p>
             <p className="text-sm text-gray-500 mt-1">
-              Share the signup link to start collecting registrations
+              Add participants or share the signup link
             </p>
           </div>
         ) : (
@@ -343,22 +433,22 @@ export default function EventDetailPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Phone
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Payment
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Registered
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Actions
                   </th>
                 </tr>
@@ -395,12 +485,21 @@ export default function EventDetailPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {new Date(reg.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                      <button
+                        onClick={() => {
+                          setSelectedRegistration(reg);
+                          setShowRecordPayment(true);
+                        }}
+                        className="text-green-600 hover:underline"
+                      >
+                        Record Payment
+                      </button>
                       <Link
                         href={`/admin/members/${reg.member_id}`}
                         className="text-blue-600 hover:underline"
                       >
-                        View Member
+                        View
                       </Link>
                     </td>
                   </tr>
@@ -410,6 +509,272 @@ export default function EventDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Add Registration Modal */}
+      {showAddRegistration && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Add Registration
+              </h3>
+              <button
+                onClick={() => setShowAddRegistration(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={regForm.first_name}
+                    onChange={(e) =>
+                      setRegForm({ ...regForm, first_name: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={regForm.last_name}
+                    onChange={(e) =>
+                      setRegForm({ ...regForm, last_name: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={regForm.email}
+                    onChange={(e) =>
+                      setRegForm({ ...regForm, email: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={regForm.mobile_phone}
+                    onChange={(e) =>
+                      setRegForm({ ...regForm, mobile_phone: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Emergency Contact Name
+                  </label>
+                  <input
+                    type="text"
+                    value={regForm.emergency_contact_name}
+                    onChange={(e) =>
+                      setRegForm({
+                        ...regForm,
+                        emergency_contact_name: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Emergency Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={regForm.emergency_contact_phone}
+                    onChange={(e) =>
+                      setRegForm({
+                        ...regForm,
+                        emergency_contact_phone: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={regForm.notes}
+                  rows={3}
+                  onChange={(e) =>
+                    setRegForm({ ...regForm, notes: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => setShowAddRegistration(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddRegistration}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              >
+                Add Registration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Record Payment Modal */}
+      {showRecordPayment && selectedRegistration && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Record Payment
+              </h3>
+              <button
+                onClick={() => {
+                  setShowRecordPayment(false);
+                  setSelectedRegistration(null);
+                }}
+                className="text-gray-900 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600">Registrant</p>
+              <p className="font-medium text-gray-900">
+                {selectedRegistration.members.first_name}{" "}
+                {selectedRegistration.members.last_name}
+              </p>
+              <p className="text-sm text-gray-600 mt-2">Balance Due</p>
+              <p className="text-xl font-bold text-gray-900">
+                ${selectedRegistration.balance_due.toFixed(2)}
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={paymentForm.amount}
+                  onChange={(e) =>
+                    setPaymentForm({ ...paymentForm, amount: e.target.value })
+                  }
+                  className="w-full text-gray-900 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  value={paymentForm.method}
+                  onChange={(e) =>
+                    setPaymentForm({
+                      ...paymentForm,
+                      method: e.target.value as any,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="check">Check</option>
+                  <option value="zelle">Zelle</option>
+                  <option value="venmo">Venmo</option>
+                  <option value="paypal">PayPal</option>
+                  <option value="card">Card</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={paymentForm.notes}
+                  rows={2}
+                  onChange={(e) =>
+                    setPaymentForm({ ...paymentForm, notes: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Check number, transaction ID, etc."
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowRecordPayment(false);
+                  setSelectedRegistration(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRecordPayment}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+              >
+                Record Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Signup URL Modal */}
       {showSignupUrl && (
@@ -440,7 +805,7 @@ export default function EventDetailPage() {
             </div>
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
-                Share this link for people to register for the event:
+                Share this link for people to register:
               </p>
               <div className="flex items-center gap-2">
                 <input
