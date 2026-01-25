@@ -1,83 +1,83 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+// import { useState } from "react";
+// import { createClient } from "@/lib/supabase/client";
+// import { useRouter } from "next/navigation";
+// import Link from "next/link";
 
 export default function SignupPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  //   const router = useRouter();
+  //   const [email, setEmail] = useState("");
+  //   const [password, setPassword] = useState("");
+  //   const [firstName, setFirstName] = useState("");
+  //   const [lastName, setLastName] = useState("");
+  //   const [loading, setLoading] = useState(false);
+  //   const [error, setError] = useState<string | null>(null);
+  //   const [success, setSuccess] = useState(false);
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  //   const handleSignup = async (e: React.FormEvent) => {
+  //     e.preventDefault();
+  //     setLoading(true);
+  //     setError(null);
 
-    const supabase = createClient();
+  //     const supabase = createClient();
 
-    // Just sign up - the trigger will create the profile automatically
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-        },
-      },
-    });
+  //     // Just sign up - the trigger will create the profile automatically
+  //     const { error: signUpError } = await supabase.auth.signUp({
+  //       email,
+  //       password,
+  //       options: {
+  //         data: {
+  //           first_name: firstName,
+  //           last_name: lastName,
+  //         },
+  //       },
+  //     });
 
-    if (signUpError) {
-      setError(signUpError.message);
-      setLoading(false);
-      return;
-    }
+  //     if (signUpError) {
+  //       setError(signUpError.message);
+  //       setLoading(false);
+  //       return;
+  //     }
 
-    // Success - the database trigger created the profile automatically
-    setSuccess(true);
-    setTimeout(() => {
-      router.push("/login");
-    }, 2000);
+  //     // Success - the database trigger created the profile automatically
+  //     setSuccess(true);
+  //     setTimeout(() => {
+  //       router.push("/login");
+  //     }, 2000);
 
-    setLoading(false);
-  };
+  //     setLoading(false);
+  //   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-        <div className="max-w-md w-full">
-          <div className="rounded-lg bg-green-50 border border-green-200 p-6 text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <svg
-                className="h-6 w-6 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-green-900 mb-2">
-              Account created successfully!
-            </h3>
-            <p className="text-sm text-green-700">Redirecting to login...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  //   if (success) {
+  //     return (
+  //       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+  //         <div className="max-w-md w-full">
+  //           <div className="rounded-lg bg-green-50 border border-green-200 p-6 text-center">
+  //             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+  //               <svg
+  //                 className="h-6 w-6 text-green-600"
+  //                 fill="none"
+  //                 stroke="currentColor"
+  //                 viewBox="0 0 24 24"
+  //               >
+  //                 <path
+  //                   strokeLinecap="round"
+  //                   strokeLinejoin="round"
+  //                   strokeWidth={2}
+  //                   d="M5 13l4 4L19 7"
+  //                 />
+  //               </svg>
+  //             </div>
+  //             <h3 className="text-lg font-medium text-green-900 mb-2">
+  //               Account created successfully!
+  //             </h3>
+  //             <p className="text-sm text-green-700">Redirecting to login...</p>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     );
+  //   }
 
   return (
     <div className="min-h-screen flex">
@@ -111,7 +111,7 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleSignup}>
+          {/* <form className="mt-8 space-y-6" onSubmit={handleSignup}>
             {error && (
               <div className="rounded-lg bg-red-50 border border-red-200 p-4">
                 <div className="flex">
@@ -256,7 +256,7 @@ export default function SignupPage() {
                 </Link>
               </p>
             </div>
-          </form>
+          </form> */}
         </div>
       </div>
     </div>

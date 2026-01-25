@@ -378,7 +378,7 @@ export default function PublicRegistrationPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, first_name: e.target.value })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.first_name ? "border-red-300" : "border-gray-300"}`}
+                    className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.first_name ? "border-red-300" : "border-gray-300"}`}
                   />
                   {errors.first_name && (
                     <p className="text-sm text-red-600 mt-1">
@@ -396,7 +396,7 @@ export default function PublicRegistrationPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, last_name: e.target.value })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.last_name ? "border-red-300" : "border-gray-300"}`}
+                    className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.last_name ? "border-red-300" : "border-gray-300"}`}
                   />
                   {errors.last_name && (
                     <p className="text-sm text-red-600 mt-1">
@@ -416,7 +416,7 @@ export default function PublicRegistrationPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? "border-red-300" : "border-gray-300"}`}
+                    className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? "border-red-300" : "border-gray-300"}`}
                   />
                   {errors.email && (
                     <p className="text-sm text-red-600 mt-1">{errors.email}</p>
@@ -432,7 +432,7 @@ export default function PublicRegistrationPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, mobile_phone: e.target.value })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.mobile_phone ? "border-red-300" : "border-gray-300"}`}
+                    className={`w-full px-4 py-2 border text-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.mobile_phone ? "border-red-300" : "border-gray-300"}`}
                   />
                   {errors.mobile_phone && (
                     <p className="text-sm text-red-600 mt-1">
@@ -462,7 +462,7 @@ export default function PublicRegistrationPage() {
                         emergency_contact_name: e.target.value,
                       })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.emergency_contact_name ? "border-red-300" : "border-gray-300"}`}
+                    className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.emergency_contact_name ? "border-red-300" : "border-gray-300"}`}
                   />
                   {errors.emergency_contact_name && (
                     <p className="text-sm text-red-600 mt-1">
@@ -484,7 +484,7 @@ export default function PublicRegistrationPage() {
                         emergency_contact_phone: e.target.value,
                       })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.emergency_contact_phone ? "border-red-300" : "border-gray-300"}`}
+                    className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.emergency_contact_phone ? "border-red-300" : "border-gray-300"}`}
                   />
                   {errors.emergency_contact_phone && (
                     <p className="text-sm text-red-600 mt-1">
@@ -505,7 +505,7 @@ export default function PublicRegistrationPage() {
                   setFormData({ ...formData, notes: e.target.value })
                 }
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 text-gray-700 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Any dietary restrictions, accessibility needs, or questions..."
               />
             </div>
@@ -537,7 +537,7 @@ export default function PublicRegistrationPage() {
                         payment_method: e.target.value,
                       })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-4 py-2 text-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       errors.payment_method
                         ? "border-red-300"
                         : "border-gray-300"

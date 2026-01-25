@@ -87,9 +87,9 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-5xl font-bold mb-6 leading-tight">
-            Church Management
+            Calvary Chapel
             <br />
-            Made Simple
+            Rosarito
           </h1>
 
           <p className="text-xl text-blue-100 mb-8 max-w-md">

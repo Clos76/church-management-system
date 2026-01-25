@@ -446,7 +446,7 @@ export default function EventDetailPage() {
                   type="text"
                   value={`${window.location.origin}/register/${event.public_signup_url}`}
                   readOnly
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+                  className="flex-1 px-4 py-2 border text-gray-700 border-gray-300 rounded-lg bg-gray-50 text-sm"
                 />
                 <button
                   onClick={handleCopySignupUrl}
@@ -458,7 +458,7 @@ export default function EventDetailPage() {
             </div>
             <button
               onClick={() => setShowSignupUrl(false)}
-              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+              className="w-full px-4 py-2 text-gray-700 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
             >
               Close
             </button>
