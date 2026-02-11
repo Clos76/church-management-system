@@ -49,3 +49,21 @@ export interface MemberStats {
   newThisMonth: number;
   newThisYear: number;
 }
+
+// Add these fields to the Member interface
+export interface MemberClasses {
+  // ... all your existing fields ...
+
+  // Follow-up tracking - ADD THESE
+  new_believers_class_1?: boolean;
+  new_believers_class_2?: boolean;
+  new_believers_class_3?: boolean;
+  new_believers_class_4?: boolean;
+  pillars_class_1?: boolean;
+  pillars_class_2?: boolean;
+  pillars_class_3?: boolean;
+  pillars_class_4?: boolean;
+  pillars_class_5?: boolean;
+  pillars_class_6?: boolean;
+  pillars_class_7?: boolean;
+}

@@ -438,7 +438,12 @@ export default function LeaderEventDetailPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {reg.members?.first_name} {reg.members?.last_name}
+                            <Link
+                              href={`/leader/members/${reg.member_id}`}
+                              className="font-semibold text-gray-900 hover:text-purple-600 hover:underline transition-colors"
+                            >
+                              {reg.members?.first_name} {reg.members?.last_name}
+                            </Link>
                           </p>
                           <p className="text-sm text-gray-600">
                             {reg.members?.email}
