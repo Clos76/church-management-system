@@ -1,4 +1,4 @@
-//create -event -new
+//src/app/admin/events/[id]/edit/page.tsx
 
 "use client";
 

@@ -30,7 +30,7 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if user is admin
+    // Check user role and redirect accordingly
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
@@ -40,8 +40,13 @@ export default function LoginPage() {
     if (profile?.role === "admin") {
       router.push("/admin");
       router.refresh();
+    } else if (profile?.role === "event_leader") {
+      router.push("/leader/dashboard");
+      router.refresh();
     } else {
-      setError("Only admin users can access this system");
+      setError(
+        "You don't have permission to access this system. Please contact an administrator.",
+      );
       await supabase.auth.signOut();
       setLoading(false);
     }
@@ -157,7 +162,7 @@ export default function LoginPage() {
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Sign in to access your admin dashboard
+              Sign in to access your dashboard
             </p>
           </div>
 

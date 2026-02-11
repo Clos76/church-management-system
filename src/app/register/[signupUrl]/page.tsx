@@ -1,3 +1,5 @@
+//src/app/registe/[signupurl]/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
