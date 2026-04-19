@@ -8,12 +8,14 @@ import { eventService } from "@/lib/services/event-service";
 import { calendarService } from "@/lib/services/calendar-service";
 import { Calendar } from "@/lib/types/calendar";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
 
 export default function NewEventPage() {
   const router = useRouter();
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -47,12 +49,12 @@ export default function NewEventPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert("Event name is required");
+      toast.error("Event name is required");
       return;
     }
 
     if (!formData.event_date) {
-      alert("Event date is required");
+      toast.error("Event date is required");
       return;
     }
 
@@ -87,7 +89,7 @@ export default function NewEventPage() {
     if (result.success && result.data) {
       router.push(`/admin/events/${result.data.id}`);
     } else {
-      alert(result.error || "Failed to create event");
+      toast.error(result.error || "Failed to create event");
     }
   };
 

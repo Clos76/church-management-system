@@ -20,10 +20,10 @@ export class CalendarService {
   }): Promise<ServiceResult<CalendarWithStats[]>> {
     try {
       if (options?.includeStats) {
-        // Get calendars with event counts using separate queries
+        // Single query — embed events to avoid N+1
         const { data: calendars, error: calError } = await this.supabase
           .from("calendars")
-          .select("*")
+          .select("*, events(id, status, event_date)")
           .order("display_order", { ascending: true });
 
         if (calError) {
@@ -31,28 +31,22 @@ export class CalendarService {
           return { success: false, error: calError.message };
         }
 
-        // Get event counts for each calendar
-        const calendarsWithStats: CalendarWithStats[] = await Promise.all(
-          (calendars || []).map(async (calendar) => {
-            const { data: events } = await this.supabase
-              .from("events")
-              .select("id, status, event_date")
-              .eq("calendar_id", calendar.id);
-
-            const now = new Date();
-            const eventList = events || [];
+        const now = new Date();
+        const calendarsWithStats: CalendarWithStats[] = (calendars || []).map(
+          (calendar) => {
+            const eventList = (calendar.events as any[]) || [];
             const upcomingEvents = eventList.filter(
               (e) =>
                 (e.status === "open" || e.status === "draft") &&
                 new Date(e.event_date) >= now,
             );
-
             return {
               ...calendar,
+              events: undefined,
               event_count: eventList.length,
               upcoming_event_count: upcomingEvents.length,
             };
-          }),
+          },
         );
 
         return { success: true, data: calendarsWithStats };

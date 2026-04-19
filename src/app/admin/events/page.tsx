@@ -28,7 +28,7 @@ export default function EventsPage() {
     ]);
 
     if (eventsResult.success && eventsResult.data) {
-      setEvents(eventsResult.data);
+      setEvents(eventsResult.data.items);
     }
 
     if (calendarsResult.success && calendarsResult.data) {

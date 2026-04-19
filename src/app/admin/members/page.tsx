@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { memberService } from "@/lib/services/member-service";
 import { Member } from "@/lib/types/member";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -12,9 +13,8 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null,
-  );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     loadMembers();
@@ -28,7 +28,7 @@ export default function MembersPage() {
     setLoading(true);
     const result = await memberService.getMembers();
     if (result.success && result.data) {
-      setMembers(result.data);
+      setMembers(result.data.items);
     }
     setLoading(false);
   };
@@ -60,7 +60,7 @@ export default function MembersPage() {
       setMembers(members.filter((m) => m.id !== id));
       setShowDeleteConfirm(null);
     } else {
-      alert(result.error || "Failed to delete member");
+      toast.error(result.error || "Failed to delete member");
     }
   };
 

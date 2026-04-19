@@ -1,17 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-
-interface UserProfile {
-  id: string;
-  email: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  role: string;
-  created_at: string;
-}
+import type { UserProfile } from "@/lib/services/user-service";
+import { useToast } from "@/components/ui/Toast";
 
 export default function ManageUsersPage() {
   const router = useRouter();
@@ -20,23 +12,21 @@ export default function ManageUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: string; newRole: string; oldRole: string } | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     loadUsers();
   }, []);
 
   const loadUsers = async () => {
-    const supabase = createClient();
+    const res = await fetch("/api/users");
+    const json = await res.json();
 
-    const { data: profiles, error } = await supabase
-      .from("profiles")
-      .select("id, email, first_name, last_name, role, created_at")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error loading users:", error);
+    if (!res.ok) {
+      console.error("Error loading users:", json.error);
     } else {
-      setUsers(profiles || []);
+      setUsers(json.data || []);
     }
 
     setLoading(false);
@@ -44,54 +34,26 @@ export default function ManageUsersPage() {
 
   const updateUserRole = async (userId: string, newRole: string) => {
     setUpdating(userId);
-    const supabase = createClient();
 
-    // Get current user (admin)
-    const {
-      data: { user: currentUser },
-    } = await supabase.auth.getUser();
-
-    if (!currentUser) {
-      alert("You must be logged in to update roles");
-      setUpdating(null);
-      return;
-    }
-
-    // Get the user being updated for logging
     const targetUser = users.find((u) => u.id === userId);
     const oldRole = targetUser?.role;
 
-    // Update the role
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ role: newRole })
-      .eq("id", userId);
+    const response = await fetch(`/api/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: newRole }),
+    });
 
-    if (updateError) {
-      console.error("Error updating role:", updateError);
-      alert(`Failed to update user role: ${updateError.message}`);
+    if (!response.ok) {
+      const data = await response.json();
+      console.error("Error updating role:", data.error);
+      toast.error(`Failed to update user role: ${data.error}`);
       setUpdating(null);
       return;
     }
 
-    // Create audit log entry
-    const { error: auditError } = await supabase.from("audit_logs").insert({
-      user_id: currentUser.id,
-      action: "update",
-      table_name: "profiles",
-      record_id: userId,
-      description: `Changed user role from ${oldRole} to ${newRole}`,
-    });
-
-    if (auditError) {
-      console.error("Error creating audit log:", auditError);
-      // Don't fail the update if audit log fails
-    }
-
-    // Update local state
     setUsers(users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-
-    alert(`✅ User role updated successfully from ${oldRole} to ${newRole}!`);
+    toast.success(`Role updated from ${oldRole} to ${newRole}`);
     setUpdating(null);
   };
 
@@ -313,31 +275,36 @@ export default function ManageUsersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <select
-                      className="text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                      value={user.role}
-                      onChange={(e) => {
-                        if (
-                          confirm(
-                            `Are you sure you want to change this user's role to ${e.target.value}?`,
-                          )
-                        ) {
-                          updateUserRole(user.id, e.target.value);
-                        } else {
-                          // Reset select to original value if cancelled
-                          e.target.value = user.role;
-                        }
-                      }}
-                      disabled={updating === user.id}
-                    >
-                      <option value="member">Member</option>
-                      <option value="event_leader">Event Leader</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    {updating === user.id && (
-                      <span className="ml-2 text-xs text-gray-500">
-                        Updating...
+                    {user.role === "admin" ? (
+                      <span className="text-xs text-gray-400">—</span>
+                    ) : updating === user.id ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                        <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Updating…
                       </span>
+                    ) : user.role === "event_leader" ? (
+                      <button
+                        onClick={() => setPendingRoleChange({ userId: user.id, newRole: "member", oldRole: user.role })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                        </svg>
+                        Remove Leader
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setPendingRoleChange({ userId: user.id, newRole: "event_leader", oldRole: user.role })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        Make Leader
+                      </button>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -413,6 +380,42 @@ export default function ManageUsersPage() {
           </div>
         </div>
       </div>
+
+      {pendingRoleChange && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {pendingRoleChange.newRole === "event_leader" ? "Make Event Leader" : "Remove Leader"}
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              {pendingRoleChange.newRole === "event_leader"
+                ? "This person will be able to log in and manage events they're assigned to."
+                : "This person will lose leader access and be set back to member."}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPendingRoleChange(null)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  updateUserRole(pendingRoleChange.userId, pendingRoleChange.newRole);
+                  setPendingRoleChange(null);
+                }}
+                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
+                  pendingRoleChange.newRole === "event_leader"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                {pendingRoleChange.newRole === "event_leader" ? "Make Leader" : "Remove Leader"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

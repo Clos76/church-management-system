@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { eventLeaderService } from "@/lib/services/event-leader-service";
+
 import {
   EventLeaderWithEvent,
   LeaderDashboardStats,
@@ -39,18 +40,11 @@ export default function LeaderDashboardPage() {
       return;
     }
 
-    // Check if user is a leader
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, first_name, last_name")
+      .select("first_name, last_name")
       .eq("id", user.id)
       .single();
-
-    if (profile?.role !== "event_leader" && profile?.role !== "admin") {
-      // Not a leader, redirect
-      router.push("/login");
-      return;
-    }
 
     setUser({ ...user, ...profile });
     await loadDashboard();

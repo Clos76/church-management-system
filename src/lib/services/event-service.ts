@@ -9,41 +9,43 @@ import {
   EventWithRegistrations,
   PublicEvent,
 } from "@/lib/types/event";
-import { ServiceResult } from "./member-service";
+import { ServiceResult, PaginatedResult } from "./member-service";
 
 export class EventService {
   private supabase = createClient();
 
   /**
-   * Get all events with optional filtering
+   * Get events with optional filtering and pagination
    */
   async getEvents(options?: {
     status?: Event["status"];
     includeStats?: boolean;
-  }): Promise<ServiceResult<EventWithStats[]>> {
+    page?: number;
+    pageSize?: number;
+  }): Promise<ServiceResult<PaginatedResult<EventWithStats>>> {
     try {
+      const page = options?.page ?? 1;
+      const pageSize = options?.pageSize ?? 25;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       let query = this.supabase
         .from("events")
-        .select(
-          `
-          *,
-          registrations(id, status)
-        `,
-        )
-        .order("event_date", { ascending: false });
+        .select("*, registrations(id, status)", { count: "exact" })
+        .order("event_date", { ascending: false })
+        .range(from, to);
 
       if (options?.status) {
         query = query.eq("status", options.status);
       }
 
-      const { data, error } = await query;
+      const { data, count, error } = await query;
 
       if (error) {
         console.error("Error fetching events:", error);
         return { success: false, error: error.message };
       }
 
-      // Calculate stats for each event
       const eventsWithStats: EventWithStats[] = (data || []).map((event) => {
         const registrations = (event.registrations || []) as Array<{
           id: string;
@@ -63,7 +65,10 @@ export class EventService {
         } as EventWithStats;
       });
 
-      return { success: true, data: eventsWithStats };
+      return {
+        success: true,
+        data: { items: eventsWithStats, total: count ?? 0, page, pageSize },
+      };
     } catch (err) {
       console.error("Unexpected error fetching events:", err);
       return { success: false, error: "Failed to fetch events" };
@@ -313,7 +318,7 @@ export class EventService {
    * Get the public signup URL for an event
    */
   getSignupUrl(event: Event): string {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
     return `${baseUrl}/register/${event.public_signup_url}`;
   }
 

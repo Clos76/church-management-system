@@ -7,55 +7,76 @@ import {
   PaymentWithDetails,
   ManualPaymentInput,
 } from "@/lib/types/payment";
-import { ServiceResult } from "./member-service";
+import type { ServiceResult, PaginatedResult } from "./types";
+import { eventBus } from "@/lib/events/event-bus";
 
 export class PaymentService {
   private supabase = createClient();
 
   /**
-   * Get all payments with details
+   * Get payments with details and pagination
    */
   async getPayments(options?: {
     registrationId?: string;
     eventId?: string;
-  }): Promise<ServiceResult<PaymentWithDetails[]>> {
+    page?: number;
+    pageSize?: number;
+  }): Promise<ServiceResult<PaginatedResult<PaymentWithDetails>>> {
     try {
+      const page = options?.page ?? 1;
+      const pageSize = options?.pageSize ?? 25;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      // When filtering by eventId, first resolve the registration IDs server-side
+      let registrationIds: string[] | null = null;
+      if (options?.eventId) {
+        const { data: regs } = await this.supabase
+          .from("registrations")
+          .select("id")
+          .eq("event_id", options.eventId);
+        registrationIds = (regs || []).map((r: any) => r.id);
+        if (registrationIds.length === 0) {
+          return {
+            success: true,
+            data: { items: [], total: 0, page, pageSize },
+          };
+        }
+      }
+
       let query = this.supabase
         .from("payments")
         .select(
-          `
-          *,
-          registrations(
-            id,
-            member_id,
-            event_id,
-            members(first_name, last_name, email),
-            events(name, event_date, price)
-          )
-        `,
+          "*, registrations(id, member_id, event_id, members(first_name, last_name, email), events(name, event_date, price))",
+          { count: "exact" },
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
       if (options?.registrationId) {
         query = query.eq("registration_id", options.registrationId);
       }
 
-      const { data, error } = await query;
+      if (registrationIds) {
+        query = query.in("registration_id", registrationIds);
+      }
+
+      const { data, count, error } = await query;
 
       if (error) {
         console.error("Error fetching payments:", error);
         return { success: false, error: error.message };
       }
 
-      // If filtering by event, do it client-side since it's a nested field
-      let filteredData = data || [];
-      if (options?.eventId) {
-        filteredData = filteredData.filter(
-          (p: any) => p.registrations?.event_id === options.eventId,
-        );
-      }
-
-      return { success: true, data: filteredData as PaymentWithDetails[] };
+      return {
+        success: true,
+        data: {
+          items: (data || []) as PaymentWithDetails[],
+          total: count ?? 0,
+          page,
+          pageSize,
+        },
+      };
     } catch (err) {
       console.error("Unexpected error fetching payments:", err);
       return { success: false, error: "Failed to fetch payments" };
@@ -188,6 +209,15 @@ export class PaymentService {
         null,
         payment,
       );
+
+      if (registration.member_id) {
+        eventBus.emit({
+          type: "donation.completed",
+          profileId: registration.member_id,
+          amount: input.amount,
+          fundId: input.registration_id,
+        });
+      }
 
       return { success: true, data: payment };
     } catch (err) {

@@ -9,31 +9,36 @@ import {
   RegistrationWithBalance,
   PublicRegistrationInput,
 } from "@/lib/types/registration";
-import { ServiceResult } from "./member-service";
+import type { ServiceResult, PaginatedResult } from "./types";
+import { eventBus } from "@/lib/events/event-bus";
 
 export class RegistrationService {
   private supabase = createClient();
 
   /**
-   * Get all registrations with details
+   * Get registrations with details and pagination
    */
   async getRegistrations(options?: {
     eventId?: string;
     memberId?: string;
     status?: Registration["status"];
-  }): Promise<ServiceResult<RegistrationWithBalance[]>> {
+    page?: number;
+    pageSize?: number;
+  }): Promise<ServiceResult<PaginatedResult<RegistrationWithBalance>>> {
     try {
+      const page = options?.page ?? 1;
+      const pageSize = options?.pageSize ?? 25;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       let query = this.supabase
         .from("registrations")
         .select(
-          `
-          *,
-          members(id, first_name, last_name, email, mobile_phone, emergency_contact_name, emergency_contact_phone),
-          events(id, name, event_date, price, allow_partial_payment),
-          payments(id, amount, method, created_at, recorded_by)
-        `,
+          "*, members(id, first_name, last_name, email, mobile_phone, emergency_contact_name, emergency_contact_phone), events(id, name, event_date, price, allow_partial_payment), payments(id, amount, method, created_at, recorded_by)",
+          { count: "exact" },
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
       if (options?.eventId) {
         query = query.eq("event_id", options.eventId);
@@ -47,14 +52,13 @@ export class RegistrationService {
         query = query.eq("status", options.status);
       }
 
-      const { data, error } = await query;
+      const { data, count, error } = await query;
 
       if (error) {
         console.error("Error fetching registrations:", error);
         return { success: false, error: error.message };
       }
 
-      // Calculate balances
       const registrationsWithBalance: RegistrationWithBalance[] = (
         data || []
       ).map((reg: any) => {
@@ -85,7 +89,15 @@ export class RegistrationService {
         };
       });
 
-      return { success: true, data: registrationsWithBalance };
+      return {
+        success: true,
+        data: {
+          items: registrationsWithBalance,
+          total: count ?? 0,
+          page,
+          pageSize,
+        },
+      };
     } catch (err) {
       console.error("Unexpected error fetching registrations:", err);
       return { success: false, error: "Failed to fetch registrations" };
@@ -256,7 +268,7 @@ export class RegistrationService {
         };
       }
 
-      // Create registration
+      // Create registration — DB unique constraint on (member_id, event_id) makes this atomic
       const { data: registration, error: regError } = await this.supabase
         .from("registrations")
         .insert({
@@ -269,9 +281,18 @@ export class RegistrationService {
         .single();
 
       if (regError) {
+        // Unique constraint violation — concurrent duplicate submission
+        if (regError.code === "23505") {
+          return {
+            success: false,
+            error: "You are already registered for this event",
+          };
+        }
         console.error("Error creating registration:", regError);
         return { success: false, error: "Failed to create registration" };
       }
+
+      eventBus.emit({ type: "event.registered", profileId: memberId, eventId: input.event_id });
 
       return {
         success: true,

@@ -7,41 +7,52 @@ import {
   UpdateMemberInput,
 } from "@/lib/types/member";
 import { Database } from "../types/database.types";
+import { eventBus } from "@/lib/events/event-bus";
 
-export interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+export type { ServiceResult, PaginatedResult } from "./types";
+import type { ServiceResult, PaginatedResult } from "./types";
 
 export class MemberService {
   private supabase = createClient();
 
   /**
-   * Get all members with optional search
+   * Get members with optional search and pagination
    */
-  async getMembers(searchQuery?: string): Promise<ServiceResult<Member[]>> {
+  async getMembers(options?: {
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<ServiceResult<PaginatedResult<Member>>> {
     try {
+      const page = options?.page ?? 1;
+      const pageSize = options?.pageSize ?? 25;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       let query = this.supabase
         .from("members")
-        .select("*")
-        .order("last_name", { ascending: true });
+        .select("*", { count: "exact" })
+        .order("last_name", { ascending: true })
+        .range(from, to);
 
-      if (searchQuery && searchQuery.trim()) {
-        const search = `%${searchQuery.trim()}%`;
+      if (options?.search && options.search.trim()) {
+        const search = `%${options.search.trim()}%`;
         query = query.or(
           `first_name.ilike.${search},last_name.ilike.${search},email.ilike.${search},mobile_phone.ilike.${search}`,
         );
       }
 
-      const { data, error } = await query;
+      const { data, count, error } = await query;
 
       if (error) {
         console.error("Error fetching members:", error);
         return { success: false, error: error.message };
       }
 
-      return { success: true, data: data || [] };
+      return {
+        success: true,
+        data: { items: data || [], total: count ?? 0, page, pageSize },
+      };
     } catch (err) {
       console.error("Unexpected error fetching members:", err);
       return { success: false, error: "Failed to fetch members" };
@@ -114,6 +125,8 @@ export class MemberService {
       // Log the action
       await this.logAction(user.id, "create", "members", data.id, null, data);
 
+      eventBus.emit({ type: "member.created", profileId: data.id, status: data.member_status });
+
       return { success: true, data };
     } catch (err) {
       console.error("Unexpected error creating member:", err);
@@ -161,6 +174,15 @@ export class MemberService {
 
       // Log the action
       await this.logAction(user.id, "update", "members", id, oldData, data);
+
+      if (input.member_status && oldData?.member_status !== input.member_status) {
+        eventBus.emit({
+          type: "member.statusChanged",
+          profileId: id,
+          from: oldData?.member_status ?? "",
+          to: input.member_status,
+        });
+      }
 
       return { success: true, data };
     } catch (err) {

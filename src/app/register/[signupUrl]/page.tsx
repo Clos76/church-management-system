@@ -29,6 +29,7 @@ export default function PublicRegistrationPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     loadEvent();
@@ -83,10 +84,11 @@ export default function PublicRegistrationPage() {
     setSubmitting(false);
 
     if (result.success) {
+      setSubmitError(null);
       setShowSuccess(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      alert(result.error || "Failed to register. Please try again.");
+      setSubmitError(result.error || "Failed to register. Please try again.");
     }
   };
 
@@ -563,6 +565,12 @@ export default function PublicRegistrationPage() {
                     required to complete registration.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {submitError && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {submitError}
               </div>
             )}
 

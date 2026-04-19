@@ -12,6 +12,7 @@ import { RegistrationWithBalance } from "@/lib/types/registration";
 import { Calendar } from "@/lib/types/calendar";
 import Link from "next/link";
 import { paymentService } from "@/lib/services/payment-service";
+import { useToast } from "@/components/ui/Toast";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -30,6 +31,7 @@ export default function EventDetailPage() {
   const [showRecordPayment, setShowRecordPayment] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
     useState<RegistrationWithBalance | null>(null);
+  const toast = useToast();
 
   const [regForm, setRegForm] = useState({
     first_name: "",
@@ -71,7 +73,7 @@ export default function EventDetailPage() {
     }
 
     if (registrationsResult.success && registrationsResult.data) {
-      setRegistrations(registrationsResult.data);
+      setRegistrations(registrationsResult.data.items);
     }
 
     setLoading(false);
@@ -82,7 +84,7 @@ export default function EventDetailPage() {
     if (result.success) {
       router.push("/admin/events");
     } else {
-      alert(result.error || "Failed to delete event");
+      toast.error(result.error || "Failed to delete event");
       setShowDeleteConfirm(false);
     }
   };
@@ -92,13 +94,13 @@ export default function EventDetailPage() {
       const fullUrl = `${window.location.origin}/register/${event.public_signup_url}`;
       navigator.clipboard.writeText(fullUrl);
       setShowSignupUrl(false);
-      alert("Signup URL copied to clipboard!");
+      toast.info("Signup URL copied to clipboard!");
     }
   };
 
   const handleAddRegistration = async () => {
     if (!event || !regForm.first_name || !regForm.last_name || !regForm.email) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -119,15 +121,15 @@ export default function EventDetailPage() {
         notes: "",
       });
       await loadEventData();
-      alert("Registration added successfully!");
+      toast.success("Registration added successfully!");
     } else {
-      alert(result.error || "Failed to add registration");
+      toast.error(result.error || "Failed to add registration");
     }
   };
 
   const handleRecordPayment = async () => {
     if (!selectedRegistration || !paymentForm.amount) {
-      alert("Please enter a payment amount");
+      toast.error("Please enter a payment amount");
       return;
     }
 
@@ -142,10 +144,10 @@ export default function EventDetailPage() {
       setShowRecordPayment(false);
       setSelectedRegistration(null);
       setPaymentForm({ amount: "", method: "cash", notes: "" });
-      await loadEventData(); // Refresh to show updated payment status
-      alert("Payment recorded successfully!");
+      await loadEventData();
+      toast.success("Payment recorded successfully!");
     } else {
-      alert(result.error || "Failed to record payment");
+      toast.error(result.error || "Failed to record payment");
     }
   };
 

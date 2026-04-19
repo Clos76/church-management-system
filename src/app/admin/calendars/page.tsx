@@ -5,6 +5,7 @@ import { calendarService } from "@/lib/services/calendar-service";
 import { CalendarWithStats } from "@/lib/types/calendar";
 import { CALENDAR_COLORS } from "@/lib/types/calendar";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
 
 export default function CalendarsPage() {
   const [calendars, setCalendars] = useState<CalendarWithStats[]>([]);
@@ -12,9 +13,8 @@ export default function CalendarsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingCalendar, setEditingCalendar] =
     useState<CalendarWithStats | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null,
-  );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -70,7 +70,7 @@ export default function CalendarsPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert("Calendar name is required");
+      toast.error("Calendar name is required");
       return;
     }
 
@@ -83,7 +83,7 @@ export default function CalendarsPage() {
         await loadCalendars();
         handleCloseModal();
       } else {
-        alert(result.error || "Failed to update calendar");
+        toast.error(result.error || "Failed to update calendar");
       }
     } else {
       const result = await calendarService.createCalendar({
@@ -94,7 +94,7 @@ export default function CalendarsPage() {
         await loadCalendars();
         handleCloseModal();
       } else {
-        alert(result.error || "Failed to create calendar");
+        toast.error(result.error || "Failed to create calendar");
       }
     }
   };
@@ -105,7 +105,7 @@ export default function CalendarsPage() {
       await loadCalendars();
       setShowDeleteConfirm(null);
     } else {
-      alert(result.error || "Failed to delete calendar");
+      toast.error(result.error || "Failed to delete calendar");
     }
   };
 

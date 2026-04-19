@@ -9,6 +9,7 @@ import { calendarService } from "@/lib/services/calendar-service";
 import { Event } from "@/lib/types/event";
 import { Calendar } from "@/lib/types/calendar";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
 
 export default function EditEventPage() {
   const params = useParams();
@@ -19,6 +20,7 @@ export default function EditEventPage() {
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -95,12 +97,12 @@ export default function EditEventPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert("Event name is required");
+      toast.error("Event name is required");
       return;
     }
 
     if (!formData.event_date) {
-      alert("Event date is required");
+      toast.error("Event date is required");
       return;
     }
 
@@ -136,7 +138,7 @@ export default function EditEventPage() {
     if (result.success) {
       router.push(`/admin/events/${eventId}`);
     } else {
-      alert(result.error || "Failed to update event");
+      toast.error(result.error || "Failed to update event");
     }
   };
 

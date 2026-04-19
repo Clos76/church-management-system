@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { eventService } from "@/lib/services/event-service";
+import { userService } from "@/lib/services/user-service";
 import { eventLeaderService } from "@/lib/services/event-leader-service";
 import { Event } from "@/lib/types/event";
 import {
@@ -12,6 +12,7 @@ import {
   DEFAULT_LEADER_PERMISSIONS,
 } from "@/lib/types/event-leader";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
 
 export default function EventLeadersPage() {
   const params = useParams();
@@ -25,6 +26,8 @@ export default function EventLeadersPage() {
   const [showAddLeader, setShowAddLeader] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     loadData();
@@ -46,15 +49,9 @@ export default function EventLeadersPage() {
       setLeaders(leadersResult.data);
     }
 
-    // Load all users (profiles) for assignment
-    const supabase = createClient();
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, first_name, last_name, avatar_url, role");
-
-    if (profiles) {
-      // DON'T fetch emails from auth.admin - just use profile data
-      setAllUsers(profiles);
+    const usersResult = await userService.getAssignableUsers();
+    if (usersResult.success && usersResult.data) {
+      setAllUsers(usersResult.data);
     }
 
     setLoading(false);
@@ -62,7 +59,7 @@ export default function EventLeadersPage() {
 
   const handleAssignLeader = async () => {
     if (!selectedUser) {
-      alert("Please select a user");
+      toast.error("Please select a user");
       return;
     }
 
@@ -78,21 +75,18 @@ export default function EventLeadersPage() {
       setSearchQuery("");
       await loadData();
     } else {
-      alert(result.error || "Failed to assign leader");
+      toast.error(result.error || "Failed to assign leader");
     }
   };
 
   const handleRemoveLeader = async (leaderId: string) => {
-    if (!confirm("Are you sure you want to remove this leader?")) {
-      return;
-    }
-
     const result = await eventLeaderService.removeLeader(leaderId);
-
     if (result.success) {
+      setRemoveConfirmId(null);
       await loadData();
     } else {
-      alert(result.error || "Failed to remove leader");
+      toast.error(result.error || "Failed to remove leader");
+      setRemoveConfirmId(null);
     }
   };
 
@@ -282,7 +276,7 @@ export default function EventLeadersPage() {
                   </div>
 
                   <button
-                    onClick={() => handleRemoveLeader(leader.id)}
+                    onClick={() => setRemoveConfirmId(leader.id)}
                     className="px-4 py-2 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors font-medium"
                   >
                     Remove
@@ -437,6 +431,29 @@ export default function EventLeadersPage() {
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Assign Leader
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {removeConfirmId && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Remove Leader</h3>
+            <p className="text-sm text-gray-600 mb-6">Are you sure you want to remove this leader from the event?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRemoveConfirmId(null)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleRemoveLeader(removeConfirmId)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Remove
               </button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { eventService } from "@/lib/services/event-service";
 import { registrationService } from "@/lib/services/registration-service";
 import { paymentService } from "@/lib/services/payment-service";
 import { eventLeaderService } from "@/lib/services/event-leader-service";
+import { useToast } from "@/components/ui/Toast";
 import { EventWithRegistrations } from "@/lib/types/event";
 import { RegistrationWithBalance } from "@/lib/types/registration";
 import { EventLeaderPermissions } from "@/lib/types/event-leader";
@@ -49,6 +50,7 @@ export default function LeaderEventDetailPage() {
   >("cash");
   const [paymentNotes, setPaymentNotes] = useState("");
   const [recordingPayment, setRecordingPayment] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     checkAccessAndLoad();
@@ -82,7 +84,7 @@ export default function LeaderEventDetailPage() {
     }
 
     if (regsResult.success && regsResult.data) {
-      setRegistrations(regsResult.data);
+      setRegistrations(regsResult.data.items);
     }
 
     setLoading(false);
@@ -90,7 +92,7 @@ export default function LeaderEventDetailPage() {
 
   const handleAddRegistration = async () => {
     if (!event || !regForm.first_name || !regForm.last_name || !regForm.email) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -111,9 +113,9 @@ export default function LeaderEventDetailPage() {
         notes: "",
       });
       await loadEventData();
-      alert("Registration added successfully!");
+      toast.success("Registration added successfully!");
     } else {
-      alert(result.error || "Failed to add registration");
+      toast.error(result.error || "Failed to add registration");
     }
   };
 
@@ -122,7 +124,7 @@ export default function LeaderEventDetailPage() {
 
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid payment amount");
+      toast.error("Please enter a valid payment amount");
       return;
     }
 
@@ -136,14 +138,14 @@ export default function LeaderEventDetailPage() {
     });
 
     if (result.success) {
-      alert("Payment recorded successfully!");
+      toast.success("Payment recorded successfully!");
       setShowRecordPayment(false);
       setSelectedRegistration(null);
       setPaymentAmount("");
       setPaymentNotes("");
       await loadEventData();
     } else {
-      alert(`Failed to record payment: ${result.error}`);
+      toast.error(result.error || "Failed to record payment");
     }
 
     setRecordingPayment(false);
@@ -359,7 +361,7 @@ export default function LeaderEventDetailPage() {
                   navigator.clipboard.writeText(
                     eventService.getSignupUrl(event),
                   );
-                  alert("Link copied to clipboard!");
+                  toast.info("Link copied to clipboard!");
                 }}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
               >
@@ -530,7 +532,7 @@ export default function LeaderEventDetailPage() {
                     onChange={(e) =>
                       setRegForm({ ...regForm, first_name: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border text-gray-600 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -543,7 +545,7 @@ export default function LeaderEventDetailPage() {
                     onChange={(e) =>
                       setRegForm({ ...regForm, last_name: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border text-gray-600 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -559,7 +561,7 @@ export default function LeaderEventDetailPage() {
                     onChange={(e) =>
                       setRegForm({ ...regForm, email: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 text-gray-600 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -572,7 +574,7 @@ export default function LeaderEventDetailPage() {
                     onChange={(e) =>
                       setRegForm({ ...regForm, mobile_phone: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 text-gray-600 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -591,7 +593,7 @@ export default function LeaderEventDetailPage() {
                         emergency_contact_name: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border text-gray-600 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -607,7 +609,7 @@ export default function LeaderEventDetailPage() {
                         emergency_contact_phone: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 text-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -622,7 +624,7 @@ export default function LeaderEventDetailPage() {
                   onChange={(e) =>
                     setRegForm({ ...regForm, notes: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>

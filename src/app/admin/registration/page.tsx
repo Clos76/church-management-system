@@ -10,6 +10,7 @@ import { EventWithStats } from "@/lib/types/event";
 import { RegistrationWithBalance } from "@/lib/types/registration";
 import { Calendar } from "@/lib/types/calendar";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function EventDetailPage() {
   const [calendar, setCalendar] = useState<Calendar | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const toast = useToast();
   const [showSignupUrl, setShowSignupUrl] = useState(false);
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export default function EventDetailPage() {
     }
 
     if (registrationsResult.success && registrationsResult.data) {
-      setRegistrations(registrationsResult.data);
+      setRegistrations(registrationsResult.data.items);
     }
 
     setLoading(false);
@@ -63,7 +65,7 @@ export default function EventDetailPage() {
     if (result.success) {
       router.push("/admin/events");
     } else {
-      alert(result.error || "Failed to delete event");
+      toast.error(result.error || "Failed to delete event");
       setShowDeleteConfirm(false);
     }
   };
@@ -73,7 +75,7 @@ export default function EventDetailPage() {
       const fullUrl = `${window.location.origin}/register/${event.public_signup_url}`;
       navigator.clipboard.writeText(fullUrl);
       setShowSignupUrl(false);
-      alert("Signup URL copied to clipboard!");
+      toast.info("Signup URL copied to clipboard!");
     }
   };
 

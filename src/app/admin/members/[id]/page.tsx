@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import { memberService } from "@/lib/services/member-service";
 import { Member } from "@/lib/types/member";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
 
 type ModalType =
   | "basic"
@@ -27,6 +28,7 @@ export default function MemberDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   // Form states for each modal
   const [basicForm, setBasicForm] = useState({
@@ -228,7 +230,7 @@ export default function MemberDetailPage() {
       populateForms(result.data);
       setActiveModal(null);
     } else {
-      alert(result.error || "Failed to update member");
+      toast.error(result.error || "Failed to update member");
     }
     setSaving(false);
   };
